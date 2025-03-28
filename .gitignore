@@ -1,0 +1,10 @@
+corpora
+__pycache__
+flores200_dataset
+run
+scripts
+test
+.vscode
+requirements-local.txt
+corpora-test
+

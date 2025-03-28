@@ -1,0 +1,13 @@
+--find-links https://download.pytorch.org/whl/cu126
+torch==2.6.0
+ctranslate2==4.5.0
+sentencepiece==0.2.0
+requests==2.32.3
+PyYAML==6.0.2
+sacrebleu==2.5.1
+unbabel-comet==2.2.5
+subword-nmt==0.3.8
+OpenNMT-py==3.5.1
+sacremoses==0.1.1
+removedup==1.0.6
+fastshuffle==1.0.1
