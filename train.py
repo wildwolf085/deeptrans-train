@@ -81,11 +81,16 @@ if test:
     vocab_size, corpus_size = 2500, 5000
 else:
     pair = args.pair
-    if len(pair)!=2:
+    if len(pair)==1:
+        from_code = 'en'
+        to_code = pair[0]
+    elif len(pair)==2:
+        from_code = pair[0]
+        to_code = pair[1]
+    else:
         print("Error: Please provide a valid language pair. Example: python train.py en zh")
         exit(1)
-    from_code = pair[0]
-    to_code = pair[1]
+    
     vocab_size, corpus_size = args.vocab_size, args.corpus_size
 
 if reverse: from_code, to_code = to_code, from_code
