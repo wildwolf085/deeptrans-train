@@ -31,29 +31,38 @@ Usage: python train.py <from_code> <to_code> [additional arguments]
 """
 
 parser = argparse.ArgumentParser(description='Train DeepTrans models')
-parser.add_argument('--source',
-    type=str,
-    help='Source language code')
-parser.add_argument('--target',
-    type=str,
-    help='Target language code')
+# parser.add_argument("pair",nargs="*")
+parser.add_argument("pair",nargs=2)
+# parser.add_argument('--source',
+#     type=str,
+#     help='Source language code')
+# parser.add_argument('--target',
+#     type=str,
+#     help='Target language code')
 parser.add_argument('--vocab_size',
     type=int,
     default=32000,
     help='Vocabulary size. Default: %(default)s')
 parser.add_argument('--corpus_size',
     type=int,
-    default=100000000,
+    default=200000000,
     help='Corpus size. Default: %(default)s')
 parser.add_argument('--reverse',
     action='store_true',
+    default=False,
     help='Reverse the source and target languages in the configuration and data sources. Default: %(default)s')
 parser.add_argument('--restart',
     action='store_true',
+    default=False,
     help='Restart the training from scratch. Default: %(default)s')
 parser.add_argument('--test',
     action='store_true',
+    default=False,
     help='Train a test model (useful for testing). Default: %(default)s')
+parser.add_argument('--shuffle',
+    action='store_true',
+    default=False,
+    help='Shuffle data Default: %(default)s')
 parser.add_argument('--build',
     action='store_true',
     help='While training is in progress on a separate process, you can launch another instance of train.py with this flag turned on to build a model from the last available checkpoints rather that waiting until the end. Default: %(default)s')
@@ -61,21 +70,29 @@ parser.add_argument('--build',
 args = parser.parse_args() 
 
 test = args.test
-
-from_code = "en" if test else args.source
-to_code = "zh" if test else args.target
-
+shuffle_only = args.shuffle
 reverse = args.reverse
+build = args.build
+restart = args.restart
+
+if test:
+    from_code = "en"
+    to_code = "zh"
+    vocab_size, corpus_size = 2500, 5000
+else:
+    pair = args.pair
+    if len(pair)!=2:
+        print("Error: Please provide a valid language pair. Example: python train.py en zh")
+        exit(1)
+    from_code = pair[0]
+    to_code = pair[1]
+    vocab_size, corpus_size = args.vocab_size, args.corpus_size
+
 if reverse: from_code, to_code = to_code, from_code
 
 current_dir = os.path.dirname(__file__)
 corpora_dir = os.path.join(current_dir, "test-corpora" if test else "corpora")
 
-vocab_size = 2500 if test else args.vocab_size
-corpus_size = 5000 if test else args.corpus_size
-
-build = args.build
-restart = args.restart
 avg_checkpoints = 1
 
 
@@ -92,7 +109,7 @@ keep_checkpoint = 10
 valid_steps = 200 if test else 2500
 train_steps = 1000 if test else 100000
 
-_date_code = datetime.today().strftime('%Y%m%d')
+_date_code = datetime.today().strftime('%y%m')
 _vocab_size = round(vocab_size / 1000)
 _corpus_size = round(corpus_size / 1000000)
 from_file = f"{corpora_dir}/{from_code}.txt"
@@ -116,22 +133,13 @@ onmt_dir = os.path.join(run_dir, "opennmt")
 
 if restart and os.path.isdir(run_dir): shutil.rmtree(run_dir)
 os.makedirs(run_dir, exist_ok=True)
-os.makedirs(onmt_dir, exist_ok=True)
+
 
 print(f"Training {languages[from_code]['en']} --> {languages[to_code]['en']} (tag: {version})")
-
-# metadata = {
-#     "from": from_code,
-#     "to": to_code,
-#     "version": version
-# }
 
 if not os.path.isfile(os.path.join(run_dir, 'src-train.txt')):
     src_train = os.path.join(run_dir, "src-train.txt")
     tgt_train = os.path.join(run_dir, "tgt-train.txt")
-
-    # print(f"Training size: {total_count - max_eval_sentences}")
-    # print(f"Validation size: {max_eval_sentences}")
 
     print("Writing shuffled sets")
     os.makedirs(run_dir, exist_ok=True)
@@ -150,12 +158,18 @@ if not os.path.isfile(os.path.join(run_dir, 'src-train.txt')):
     os.rename(src, src_train)
     os.rename(tgt, tgt_train)
 
+if shuffle_only:
+    print("done")
+    exit(0)
+
+os.makedirs(onmt_dir, exist_ok=True)
 sp_model_path = os.path.join(run_dir, "sp.model")
 if not os.path.isfile(sp_model_path):
     try:
         spm.SentencePieceTrainer.train(
             input=[from_file, to_file], 
-            model_prefix=f"{run_dir}/sp", vocab_size=vocab_size,
+            model_prefix=f"{run_dir}/sp", 
+            vocab_size=vocab_size,
             character_coverage=character_coverage,
             input_sentence_size=corpus_size,
             train_extremely_large_corpus=True,
@@ -257,8 +271,6 @@ onmt_config = {
 if sys.platform == 'darwin' or ctranslate2.get_cuda_device_count() == 0:
     # CPU
     del onmt_config['gpu_ranks']
-
-
 
 onmt_config_path = os.path.join(run_dir, "config.yml")
 with open(onmt_config_path, "w", encoding="utf-8") as f:

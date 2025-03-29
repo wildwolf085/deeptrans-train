@@ -184,4 +184,4 @@ AGPLv3
 
 D:\appdata\env312\Scripts\activate.ps1
 
-python train.py --source en --target ja --test
+python train.py --source en --target ko --vocab 32000 --corpus_size 200000000 --dataset
