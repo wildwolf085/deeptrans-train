@@ -75,6 +75,11 @@ reverse = args.reverse
 build = args.build
 restart = args.restart
 
+# calculate num_threads from cpu count
+num_threads = os.cpu_count() - 2
+if num_threads < 2: num_threads = 2
+print(f"num_threads: {num_threads}")
+
 if test:
     from_code = "en"
     to_code = "zh"
@@ -179,6 +184,7 @@ if not os.path.isfile(sp_model_path):
             input_sentence_size=corpus_size,
             train_extremely_large_corpus=True,
             max_sentence_length=4800,
+            num_threads=num_threads,
             shuffle_input_sentence=True
         )
     except Exception as e:
@@ -236,7 +242,7 @@ onmt_config = {
     'train_steps': train_steps, 
     'early_stopping': 4, 
     'bucket_size': 262144, 
-    'num_worker': 2,
+    'num_worker': num_threads, # original 2,
     'world_size': 1, 
     'gpu_ranks': [0], 
     'batch_type': 'tokens', 
