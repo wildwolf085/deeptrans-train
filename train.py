@@ -32,7 +32,7 @@ Usage: python train.py <from_code> <to_code> [additional arguments]
 
 parser = argparse.ArgumentParser(description='Train DeepTrans models')
 # parser.add_argument("pair",nargs="*")
-parser.add_argument("pair",nargs=2)
+parser.add_argument("pair",nargs="*")
 # parser.add_argument('--source',
 #     type=str,
 #     help='Source language code')
