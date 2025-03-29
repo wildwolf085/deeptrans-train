@@ -183,7 +183,7 @@ if not os.path.isfile(sp_model_path):
             character_coverage=character_coverage,
             input_sentence_size=corpus_size,
             train_extremely_large_corpus=True,
-            max_sentence_length=4800,
+            max_sentence_length=8192,
             num_threads=num_threads,
             shuffle_input_sentence=True
         )
@@ -242,7 +242,7 @@ onmt_config = {
     'train_steps': train_steps, 
     'early_stopping': 4, 
     'bucket_size': 262144, 
-    'num_worker': num_threads, # original 2,
+    'num_worker': 4, # one GPU 4, two GPUs 2. # original 2,
     'world_size': 1, 
     'gpu_ranks': [0], 
     'batch_type': 'tokens', 

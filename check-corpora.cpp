@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
             // break;
         }
     }
-    // pe  it 
+    // abnormal sentence in en corpora: line 1200519.
     std::cout << "Found " << count << " lines" << std::endl;
     std::cout << line << std::endl;
     return 0;
