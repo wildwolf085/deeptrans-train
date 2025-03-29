@@ -102,7 +102,7 @@ avg_checkpoints = 1
 
 
 character_coverage = 1.0
-seq_length = 150
+seq_length = 5000
 
 enc_layers = 4 if test else 6
 dec_layers = 4 if test else 6
@@ -178,6 +178,7 @@ if not os.path.isfile(sp_model_path):
             character_coverage=character_coverage,
             input_sentence_size=corpus_size,
             train_extremely_large_corpus=True,
+            max_sentence_length=4800,
             shuffle_input_sentence=True
         )
     except Exception as e:
