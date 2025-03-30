@@ -41,11 +41,11 @@ parser.add_argument("pair",nargs="*")
 #     help='Target language code')
 parser.add_argument('--vocab_size',
     type=int,
-    default=32000,
+    default=50000,
     help='Vocabulary size. Default: %(default)s')
 parser.add_argument('--corpus_size',
     type=int,
-    default=200000000,
+    default=72000000 * 2,
     help='Corpus size. Default: %(default)s')
 parser.add_argument('--reverse',
     action='store_true',
@@ -78,6 +78,7 @@ restart = args.restart
 # calculate num_threads from cpu count
 num_threads = os.cpu_count() - 2
 if num_threads < 2: num_threads = 2
+if num_threads > 32: num_threads = 32
 print(f"num_threads: {num_threads}")
 
 if test:
