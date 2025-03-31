@@ -1,8 +1,8 @@
 import torch
-import sys
+# import sys
 import math
 from onmt.constants import DefaultTokens
-from onmt.transforms import register_transform
+# from onmt.transforms import register_transform
 
 # From: https://github.com/OpenNMT/OpenNMT-py
 # MIT licensed

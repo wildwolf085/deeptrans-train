@@ -11,3 +11,4 @@ corpora-test
 *-password.*
 *.exe
 tokenizer/*
+log/*
