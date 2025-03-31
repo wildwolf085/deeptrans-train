@@ -34,7 +34,7 @@ parser = argparse.ArgumentParser(description='Train DeepTrans models')
 parser.add_argument("pair",nargs="*")
 parser.add_argument('--vocab_size',
     type=int,
-    default=50000,
+    default=32000,
     help='Vocabulary size. Default: %(default)s')
 parser.add_argument('--corpus_size',
     type=int,
