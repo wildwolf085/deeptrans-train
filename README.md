@@ -13,6 +13,15 @@ Easy to use, cross-platform toolkit to train [deeptrans-train](https://github.co
 git clone https://github.com/wildwolf085/deamtrans-train --depth 1
 cd deamtrans-train
 pip install -r requirements.txt
+
+# windows
+g++.exe -g ./validate-corpus.cpp -o ./validate-corpus.exe
+# linux
+g++.exe -g ./validate-corpus.cpp -o ./validate-corpus
+
+g++ -O3 -fopenmp shuffle.cpp -o shuffle.exe
+
+./shuffle input1.txt input2.txt output1.txt output2.txt [num_lines]
 ```
 
 ## Background

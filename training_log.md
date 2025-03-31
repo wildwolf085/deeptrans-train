@@ -5,7 +5,7 @@
 - Dual 18-Core E5-2697v4
 - 512GB RAM
 
-## en-ko (test) BPE 32000
+## en-ko (test) BPE shared vocab 32k, corpus 71.3m, steps 150k
 
 1. SentencePiece
     
@@ -18,15 +18,6 @@
     Alphabet size: 12,849
 
     RAM: 46GB
-    
-    Making suffix array...
-    Extracting frequent sub strings... node_num=5,529,353,260
-
-2. OpenNMT
-    
-    Started 2025-03-31 11:00
-
-    RAM: 34GB
 
 ## ko-en
 

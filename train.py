@@ -9,7 +9,6 @@ import glob
 import yaml
 import subprocess
 import re
-import zipfile
 import ctranslate2
 
 from removedup import rdup
@@ -72,6 +71,7 @@ reverse = args.reverse
 build = args.build
 restart = args.restart
 use_bpe = args.bpe
+sp_name = "bpe" if use_bpe else "sp"
 
 # calculate num_threads from cpu count
 num_threads = os.cpu_count() - 2
@@ -113,10 +113,10 @@ dec_layers = 4 if test else 6
 heads = 4 if test else 8
 hidden_size = 368 if test else 512
 word_vec_size = 368 if test else 512
-save_checkpoint_steps = 100 if test else 2500
-keep_checkpoint = 5
 valid_steps = 200 if test else 5000
 train_steps = 1000 if test else 150000
+save_checkpoint_steps = 100 if test else valid_steps
+keep_checkpoint = 5
 
 _date_code = datetime.today().strftime('%y%m')
 _vocab_size = round(vocab_size / 1000)
@@ -124,7 +124,9 @@ _corpus_size = round(corpus_size / 1000000)
 from_file = f"{corpora_dir}/{from_code}.txt"
 to_file = f"{corpora_dir}/{to_code}.txt"
 
-version = f"{_date_code}.{_vocab_size}k.{_corpus_size}m"
+_tokenizer = ".bpe" if use_bpe else ""
+
+version = f"{_vocab_size}k.{_corpus_size}m{_tokenizer}.{_date_code}"
 
 valid_languages = [f[:-4] for f in filter(lambda x: x.endswith('.txt'), os.listdir(corpora_dir))]
 
@@ -172,13 +174,13 @@ if shuffle_only:
     exit(0)
 
 os.makedirs(onmt_dir, exist_ok=True)
-sp_model_path = os.path.join(run_dir, "sp.model")
+sp_model_path = os.path.join(run_dir, f"{sp_name}.model")
 if not os.path.isfile(sp_model_path):
     try:
         spm.SentencePieceTrainer.train(
             model_type="bpe" if use_bpe else "unigram",
             input=[from_file, to_file], 
-            model_prefix=f"{run_dir}/sp", 
+            model_prefix=f"{run_dir}/{sp_name}", 
             vocab_size=vocab_size,
             character_coverage=character_coverage,
             input_sentence_size=corpus_size,
@@ -224,8 +226,8 @@ onmt_config = {
         'mode': 'none',
         'lang': to_code,
     },
-    'src_subword_model': f'{run_dir}/sp.model', 
-    'tgt_subword_model': f'{run_dir}/sp.model', 
+    'src_subword_model': f'{run_dir}/{sp_name}.model', 
+    'tgt_subword_model': f'{run_dir}/{sp_name}.model', 
     'src_subword_nbest': 1, 
     'src_subword_alpha': 0.0, 
     'tgt_subword_nbest': 1, 
@@ -287,7 +289,7 @@ with open(onmt_config_path, "w", encoding="utf-8") as f:
     f.write(yaml.dump(onmt_config))
     print(f"Wrote {onmt_config_path}")
 
-sp_vocab_file = os.path.join(run_dir, "sp.vocab")
+sp_vocab_file = os.path.join(run_dir, f"{sp_name}.vocab")
 onmt_vocab_file = os.path.join(onmt_dir, "openmt.vocab")
     
 if not os.path.isfile(onmt_vocab_file):
@@ -367,6 +369,6 @@ with zipfile.ZipFile(package_file, 'w') as zipf:
     for file in files:
         zipf.write(os.path.join(ct2_model_dir, file), file)
     
-    zipf.write(sp_model_path, "sp.model")
+    zipf.write(sp_model_path, f"{sp_name}.model")
 
 print("Done!")
