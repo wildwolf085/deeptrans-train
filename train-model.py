@@ -210,8 +210,8 @@ onmt_config = {
             'transforms': transforms
         }
     }, 
-    'src_subword_type': 'BPE',
-    'tgt_subword_type': 'BPE',
+    'src_subword_type': 'bpe',
+    'tgt_subword_type': 'bpe',
     'src_onmttok_kwargs': {
         'mode': 'none',
         'lang': from_code,
