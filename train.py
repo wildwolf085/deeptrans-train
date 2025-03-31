@@ -44,6 +44,10 @@ parser.add_argument('--reverse',
     action='store_true',
     default=False,
     help='Reverse the source and target languages in the configuration and data sources. Default: %(default)s')
+parser.add_argument('--bpe',
+    action='store_true',
+    default=False,
+    help='Use BPE tokernize instead of unigram. Default: %(default)s')
 parser.add_argument('--restart',
     action='store_true',
     default=False,
@@ -67,6 +71,7 @@ shuffle_only = args.shuffle
 reverse = args.reverse
 build = args.build
 restart = args.restart
+use_bpe = args.bpe
 
 # calculate num_threads from cpu count
 num_threads = os.cpu_count() - 2
@@ -171,6 +176,7 @@ sp_model_path = os.path.join(run_dir, "sp.model")
 if not os.path.isfile(sp_model_path):
     try:
         spm.SentencePieceTrainer.train(
+            model_type="bpe" if use_bpe else "unigram",
             input=[from_file, to_file], 
             model_prefix=f"{run_dir}/sp", 
             vocab_size=vocab_size,
@@ -208,8 +214,8 @@ onmt_config = {
             'transforms': transforms
         }
     }, 
-    'src_subword_type': 'sentencepiece',
-    'tgt_subword_type': 'sentencepiece',
+    'src_subword_type': "bpe" if use_bpe else 'sentencepiece',
+    'tgt_subword_type': "bpe" if use_bpe else 'sentencepiece',
     'src_onmttok_kwargs': {
         'mode': 'none',
         'lang': from_code,
