@@ -114,9 +114,9 @@ heads = 4 if test else 8
 hidden_size = 368 if test else 512
 word_vec_size = 368 if test else 512
 save_checkpoint_steps = 100 if test else 2500
-keep_checkpoint = 10
-valid_steps = 200 if test else 2500
-train_steps = 1000 if test else 100000
+keep_checkpoint = 5
+valid_steps = 200 if test else 5000
+train_steps = 1000 if test else 150000
 
 _date_code = datetime.today().strftime('%y%m')
 _vocab_size = round(vocab_size / 1000)
