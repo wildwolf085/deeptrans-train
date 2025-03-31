@@ -10,3 +10,4 @@ requirements-local.txt
 corpora-test
 *-password.*
 *.exe
+tokenizer/*
