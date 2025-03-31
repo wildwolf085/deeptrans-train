@@ -31,14 +31,7 @@ Usage: python train.py <from_code> <to_code> [additional arguments]
 """
 
 parser = argparse.ArgumentParser(description='Train DeepTrans models')
-# parser.add_argument("pair",nargs="*")
 parser.add_argument("pair",nargs="*")
-# parser.add_argument('--source',
-#     type=str,
-#     help='Source language code')
-# parser.add_argument('--target',
-#     type=str,
-#     help='Target language code')
 parser.add_argument('--vocab_size',
     type=int,
     default=50000,
@@ -148,9 +141,9 @@ os.makedirs(run_dir, exist_ok=True)
 
 print(f"Training {languages[from_code]['en']} --> {languages[to_code]['en']} (tag: {version})")
 
-if not os.path.isfile(os.path.join(run_dir, 'src-train.txt')):
-    src_train = os.path.join(run_dir, "src-train.txt")
-    tgt_train = os.path.join(run_dir, "tgt-train.txt")
+if not os.path.isfile(os.path.join(run_dir, f'{from_code}.txt')):
+    src_train = os.path.join(run_dir, f"{from_code}.txt")
+    tgt_train = os.path.join(run_dir, f"{to_code}.txt")
 
     print("Writing shuffled sets")
     os.makedirs(run_dir, exist_ok=True)
@@ -158,8 +151,8 @@ if not os.path.isfile(os.path.join(run_dir, 'src-train.txt')):
     src, tgt, src_sample, tgt_sample = file_shuffle_sample(from_file, to_file, 1000 if test else 5000)
     os.rename(src, src_train)
     os.rename(tgt, tgt_train)
-    os.rename(src_sample, os.path.join(run_dir, "src-val.txt"))
-    os.rename(tgt_sample, os.path.join(run_dir, "tgt-val.txt"))
+    os.rename(src_sample, os.path.join(run_dir, f"{from_code}-val.txt"))
+    os.rename(tgt_sample, os.path.join(run_dir, f"{to_code}-val.txt"))
     
     print("Removing duplicates")
     src, tgt, removed = rdup(src_train, tgt_train)
@@ -192,8 +185,6 @@ if not os.path.isfile(sp_model_path):
         print(str(e))
         exit(1)
 
-
-
 transforms = ['sentencepiece', 'filtertoolong']
 
 onmt_config = {
@@ -206,14 +197,14 @@ onmt_config = {
     'share_vocab': True, 
     'data': {
         'train': {
-            'path_src': f'{run_dir}/src-train.txt',
-            'path_tgt': f'{run_dir}/tgt-train.txt',
+            'path_src': f'{run_dir}/{from_code}.txt',
+            'path_tgt': f'{run_dir}/{to_code}.txt',
             'transforms': transforms,
             'weight': 1
         },
         'valid': {
-            'path_src': f'{run_dir}/src-val.txt',
-            'path_tgt': f'{run_dir}/tgt-val.txt', 
+            'path_src': f'{run_dir}/{from_code}-val.txt',
+            'path_tgt': f'{run_dir}/{to_code}-val.txt', 
             'transforms': transforms
         }
     }, 

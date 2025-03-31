@@ -17,132 +17,55 @@ pip install -r requirements.txt
 
 ## Background
 
-Language models can be trained by providing lots of example translations from a source language to a target language. All you need to get started is a set of two files (`source` and `target`). The source file containing sentences written in the source language and a corresponding file with sentences written in the target language.
+Language models can be trained by providing lots of example translations from a source language to a target language. All you need to get started is a set of two files (`{source_code}` and `target_code`). The source file containing sentences written in the source language and a corresponding file with sentences written in the target language.
 
 For example:
 
-`source.txt`:
+`en.txt`:
 
 ```
 Hello
-I'm a train!
 Goodbye
 ```
 
-`target.txt`:
+`es.txt`:
 
 ```
 Hola
-¡Soy un tren!
 Adiós
 ```
 
 ## Usage
 
-Place `source.txt` and `target.txt` files in a folder (e.g. `mydataset-en_es`) of your choice:
+Place `en.txt` and `es.txt` files in ".\corpora" folder:
 
 ```bash
-mydataset-en_es/
-├── source.txt
-└── target.txt
+corpora/
+├── en.txt
+└── es.txt
 ```
-
-Create a `config.json` file specifying your sources:
-
-```json
-{
-    "from": "en",
-    "to": "es",
-    "version": "1.0",
-    "sources": [
-        "file://D:\\path\\to\\mydataset-en_es",
-        "opus://Ubuntu"
-    ]
-}
-```
-
-Note you can specify, local folders (using the `file://` prefix), internet URLs to .zip archives (using the `http://` or `https://` prefix) or [OPUS](https://opus.nlpl.eu/) datasets (using the `opus://` prefix). For a complete list of OPUS datasets, see [OPUS.md](OPUS.md) and note that they are case-sensitive.
 
 Then run:
 
 ```bash
-python train.py --config config.json
+python train.py en es
+
+# [en] can be omitted.
+python train.py es
 ```
 
 Training can take a while and depending on the size of datasets can require a graphics card with lots of memory.
 
 The output will be saved in `run/[from]-[to]-[YYMMDD].[vocab_size(k)].[input_size(m)]..dp` ex `run/en-it-250228.32.100.dp` (trained on 32k vocab and 100m input pair sentences at 28/02/2025).
 
-### Running out of memory
-
-If you're running out of CUDA memory, decrease the `batch_size` parameter, which by default is set to `8192`:
-
-```json
-{
-    "from": "en",
-    "to": "es",
-    "sources": [
-        "file://D:\\path\\to\\mydataset-en_es"
-    ],
-    "batch_size": 2048
-}
-```
-
 ### Reverse Training
 
 Once you have trained a model from `source => target`, you can easily train a reverse model `target => source` model by passing `--reverse`:
 
 ```bash
-python train.py --config config.json --reverse
-```
-
-### Tensorboard
-
-TensorBoard allows tracking and visualizing metrics such as loss and accuracy, visualizing the model graph and other features. You can enable tensorboard with the `--tensorboard` option:
-
-```bash
-python train.py --config config.json --tensorboard
-```
-
-### Tuning
-
-The model is generated using sensible default values. You can override the [default configuration](https://github.com/wildwolf085/deamtrans-train/blob/main/train.py#L276) by adding values directly to your `config.json`. For example, to use a smaller dictionary size, add a `vocab_size` key in `config.json`:
-
-```json
-{
-    "from": "en",
-    "to": "es",
-    "version": "0.1",
-    "sources": [
-        "file://D:\\path\\to\\mydataset-en_es"
-    ],
-    "vocab_size": 32000
-}
-```
-
-## Evaluate
-
-You can evaluate the model by running:
-
-```bash
-python eval.py --config config.json
-Starting interactive mode
-(en)> Hello!
-(es)> ¡Hola!
-(en)>
-```
-
-You can also compute [BLEU](https://en.wikipedia.org/wiki/BLEU) scores against the [flores200](https://github.com/facebookresearch/flores/blob/main/flores200/README.md) dataset for the model by running:
-
-```bash
-python eval.py --config config.json --bleu
-BLEU score: 45.12354
-```
-
-To run evaluation:
-
-```bash
-python eval.py --config run/en_it-opus_1.0/config.json
+python train.py en es --reverse
+# [en] can be omitted.
+python train.py es --reverse
 ```
 
 ## Contribute
@@ -185,3 +108,4 @@ AGPLv3
 D:\appdata\env312\Scripts\activate.ps1
 
 python train.py ja
+

@@ -1,4 +1,5 @@
 corpora
+!corpora\readme.md
 __pycache__
 flores200_dataset
 run
@@ -7,4 +8,5 @@ test
 .vscode
 requirements-local.txt
 corpora-test
-
+*-password.*
+*.exe

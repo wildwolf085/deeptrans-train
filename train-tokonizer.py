@@ -1,7 +1,7 @@
 import sys
 import os
 import sentencepiece as spm
-from data import merge_shuffle
+# from data import merge_shuffle
 
 
 # corpora_dir = "e:\\corpora"
@@ -31,11 +31,14 @@ from data import merge_shuffle
 # )
 
 lang = sys.argv[1]
+
+vocab_size = 32000
+_vocab = int(vocab_size / 1000)
 print(lang)
 
 current_dir = os.path.dirname(__file__)
 tokenizer_dir = f"{current_dir}/tokenizer"
-source_dir = f"{current_dir}/corpora"
+source_dir = f"{current_dir}/en-ko-2503.50k.144m"
 
 os.makedirs(tokenizer_dir, exist_ok=True)
 
@@ -45,9 +48,9 @@ print("start train BPE tokenizer")
 # https://github.com/google/sentencepiece/blob/master/doc/options.md
 spm.SentencePieceTrainer.train(
     input=input_file,
-    model_type="bpe",
-    model_prefix=f"{tokenizer_dir}/{lang}",
-    vocab_size=16000,
+    model_type="BPE",
+    model_prefix=f"{tokenizer_dir}/{lang}-{_vocab}k",
+    vocab_size=vocab_size,
     character_coverage=1.0,
     input_sentence_size= 0, # 100000000,
     train_extremely_large_corpus=True,
@@ -57,6 +60,7 @@ spm.SentencePieceTrainer.train(
 )
 
 """ 
+
 tokenizer training log (unigram)
 Step 400/100000; acc: 90.1; ppl: 5.4; xent: 1.7; lr: 0.00119; sents:  110319; bsz: 7829/2776/276; 8432/2990 tok/s; 4101 sec;
 Step 450/100000; acc: 90.4; ppl: 5.5; xent: 1.7; lr: 0.00119; sents:  107571; bsz: 7764/2789/269; 5850/2102 tok/s; 4632 sec;
