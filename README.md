@@ -84,20 +84,6 @@ Make sure to share both a forward and reverse model (e.g. `en => es` and `es => 
 
 We also welcome contributions to DeepTrans! Just open a pull request.
 
-## Use with DeepTrans
-
-To install the resulting .argosmodel file, locate the `~/.local/share/argos-translate/packages` folder. On Windows this is the `%userprofile%\.local\share\argos-translate\packages` folder. Then create a `[from-code]_[to-code]` folder (e.g. `en_es`). If it already exists, delete or move it.
-
-Extract the contents of the .argosmodel file (which is just a .zip file, you might need to change the extension to .zip) into this folder. Then restart DeepTrans.
-
-You can also install .argosmodel packages from Python:
-```
-import pathlib
-import argostranslate.package
-package_path = pathlib.Path("/root/translate-en_it-2_0.argosmodel")
-argostranslate.package.install_from_path(package_path)
-```
-
 ## Credits
 
 In no particular order, we'd like to thank:
