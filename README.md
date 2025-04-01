@@ -19,7 +19,7 @@ mkdir bin
 g++ -g tool_validate.cpp -o bin/validate
 g++ -O3 -fopenmp tool_shuffle.cpp -o bin/shuffle
 
-./tool_shuffle en de 0 5000
+./bin/shuffle en de 0 5000
 ```
 
 ## Background

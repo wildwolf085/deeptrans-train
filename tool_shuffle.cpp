@@ -15,38 +15,52 @@ class FastCorpusShuffler {
 private:
     std::vector<std::string> corpus1_;
     std::vector<std::string> corpus2_;
-    std::vector<int32_t> indices;
-    std::mt19937_64 rng_;
+    std::vector<int32_t> indices_;  // Added underscore for consistency and made it a member
     
 public:
-    FastCorpusShuffler() : rng_(std::random_device{}()) {
-        // Pre-allocate vectors to avoid reallocations
-        corpus1_.reserve(MAX_LINES);  // ~80M lines
+    FastCorpusShuffler() {
+        corpus1_.reserve(MAX_LINES);
         corpus2_.reserve(MAX_LINES);
-        indices.reserve(MAX_LINES);
+        indices_.reserve(MAX_LINES);  // Reserve space for indices
+    }
 
-        std::string shuffle_file_path_ = ".\\shuffle_indices.bin";
-        std::ifstream shuffle_file(shuffle_file_path_, std::ios::binary);
+    bool InitializeShuffleIndices(size_t corpus_size) {
+        // format text
+        std::string shuffle_file_path = ".\\shuffle-" + std::to_string(corpus_size) + ".bin";  // Changed path to match original
+        std::ifstream shuffle_file(shuffle_file_path, std::ios::binary);
+        indices_.resize(corpus_size);  // Resize instead of creating new vector
         
         if (shuffle_file.is_open()) {
             std::cout << "Found existing shuffle indices file. Loading..." << std::endl;
-            // std::vector<int32_t> indices(MAX_LINES);
-            shuffle_file.read(reinterpret_cast<char*>(indices.data()), MAX_LINES * sizeof(int32_t));
+            shuffle_file.read(reinterpret_cast<char*>(indices_.data()), corpus_size * sizeof(int32_t));
             shuffle_file.close();
-        } else {
-            std::iota(0, MAX_LINES, 0);
-            std::shuffle(0, MAX_LINES, rng_);
-            std::ofstream out_file(shuffle_file_path_, std::ios::binary);
-            if (!out_file.is_open()) {
-                std::cerr << "Error: Cannot create shuffle indices file" << std::endl;
-            } else {
-                out_file.write(reinterpret_cast<char*>(indices.data()), MAX_LINES * sizeof(int32_t));
-                out_file.close();
+            
+            if (shuffle_file.gcount() == corpus_size * sizeof(int32_t)) {
+                return true;  // Don't apply permutation here - we use indices_ directly
             }
         }
+        // Always seed properly
+        std::random_device rd;
+        std::mt19937 rng(rd());
+        // Use std::shuffle directly
+        // std::shuffle(data.begin(), data.end(), rng);
+        std::cout << "Creating new shuffle indices file..." << std::endl;
+        std::iota(indices_.begin(), indices_.end(), 0);
+        std::shuffle(indices_.begin(), indices_.end(), rng);
+
+        std::ofstream out_file(shuffle_file_path, std::ios::binary);
+        if (!out_file.is_open()) {
+            std::cerr << "Error: Cannot create shuffle indices file" << std::endl;
+            return false;
+        }
+
+        out_file.write(reinterpret_cast<char*>(indices_.data()), corpus_size * sizeof(int32_t));
+        out_file.close();
+
+        return true;  // Don't apply permutation here
     }
 
-    bool LoadFiles(const char* file1, const char* file2, size_t max_lines = 0) {
+    size_t LoadFiles(const char* file1, const char* file2, size_t max_lines = 0) {
         auto start = std::chrono::high_resolution_clock::now();
         std::cout << "Loading files..." << std::endl;
 
@@ -63,27 +77,27 @@ public:
         auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
         std::cout << "Loading completed in " << duration.count() << " seconds\n";
         std::cout << "Total lines: " << corpus1_.size() << std::endl;
-        return true;
+        return corpus1_.size();
     }
 
-    void Shuffle() {
-        auto start = std::chrono::high_resolution_clock::now();
-        std::cout << "Starting shuffle..." << std::endl;
+    // void Shuffle() {
+    //     auto start = std::chrono::high_resolution_clock::now();
+    //     std::cout << "Starting shuffle..." << std::endl;
 
-        // Create index vector for shuffling
-        std::vector<size_t> indices(corpus1_.size());
-        std::iota(indices.begin(), indices.end(), 0);
+    //     // Create index vector for shuffling
+    //     std::vector<size_t> indices(corpus1_.size());
+    //     std::iota(indices.begin(), indices.end(), 0);
         
-        // Shuffle indices
-        std::shuffle(indices.begin(), indices.end(), rng_);
+    //     // Shuffle indices
+    //     std::shuffle(indices.begin(), indices.end(), rng_);
 
-        // Apply permutation to both vectors
-        ApplyPermutation(indices);
+    //     // Apply permutation to both vectors
+    //     ApplyPermutation(indices);
 
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-        std::cout << "Shuffle completed in " << duration.count() << " seconds\n";
-    }
+    //     auto end = std::chrono::high_resolution_clock::now();
+    //     auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+    //     std::cout << "Shuffle completed in " << duration.count() << " seconds\n";
+    // }
 
     bool SaveFiles(const char* out1, const char* out2, const char* out1_sample, const char* out2_sample, size_t sample_lines = 0) {
         auto start = std::chrono::high_resolution_clock::now();
@@ -116,7 +130,7 @@ private:
         file.rdbuf()->pubsetbuf(buffer.get(), BUFFER_SIZE);
         
         std::string line;
-        line.reserve(1024);  // Reserve typical line length
+        line.reserve(8192);  // Reserve typical line length
         
         size_t count = 0;
         while (std::getline(file, line)) {
@@ -143,9 +157,16 @@ private:
         const size_t BUFFER_SIZE = 1 << 20;  // 1MB buffer
         std::unique_ptr<char[]> buffer(new char[BUFFER_SIZE]);
         file.rdbuf()->pubsetbuf(buffer.get(), BUFFER_SIZE);
+        
+        size_t count = lines.size();
+        
+        // std::cout << "Offset " << offset + num_lines << " Count " << count << " lines" << std::endl;
 
-        for (size_t i = offset; i < num_lines; ++i) {
-            file << lines[i] << '\n';
+        for (size_t i = offset; i < offset + num_lines && i < count; i++) {  // Fixed bounds checking
+            file << lines[indices_[i]] << '\n';  // Use indices_ member variable
+            // if ((i + 1) % 10 == 0) {
+            //     std::cout << indices_[i] << std::endl;
+            // }
             if ((i + 1) % 1000000 == 0) {
                 std::cout << "Wrote " << (i + 1) / 1000000 << "M lines to " << filename << std::endl;
             }
@@ -153,19 +174,19 @@ private:
         return true;
     }
 
-    void ApplyPermutation(const std::vector<size_t>& indices) {
-        std::vector<std::string> temp1(corpus1_.size());
-        std::vector<std::string> temp2(corpus2_.size());
+    // void ApplyPermutation(const std::vector<size_t>& indices) {
+    //     std::vector<std::string> temp1(corpus1_.size());
+    //     std::vector<std::string> temp2(corpus2_.size());
         
-        #pragma omp parallel for
-        for (size_t i = 0; i < indices.size(); ++i) {
-            temp1[i] = std::move(corpus1_[indices[i]]);
-            temp2[i] = std::move(corpus2_[indices[i]]);
-        }
+    //     #pragma omp parallel for
+    //     for (size_t i = 0; i < indices.size(); ++i) {
+    //         temp1[i] = std::move(corpus1_[indices[i]]);
+    //         temp2[i] = std::move(corpus2_[indices[i]]);
+    //     }
         
-        corpus1_ = std::move(temp1);
-        corpus2_ = std::move(temp2);
-    }
+    //     corpus1_ = std::move(temp1);
+    //     corpus2_ = std::move(temp2);
+    // }
 };
 
 int main(int argc, char* argv[]) {
@@ -191,22 +212,22 @@ int main(int argc, char* argv[]) {
         max_lines = std::stoull(argv[3]);
         if (argc > 4) sample_lines = std::stoull(argv[4]);
     }
-    std::string corpora_dir = std::string("..\\corpora\\");
+    std::string corpora_dir = std::string(".\\corpora\\");
     std::string source = corpora_dir + from_code + ".txt";
     std::string target = corpora_dir + to_code + ".txt";
-    std::string source_shuffled = corpora_dir + from_code + ".shuffled.txt";
-    std::string target_shuffled = corpora_dir + to_code + ".shuffled.txt";
-    std::string source_sample = corpora_dir + from_code + ".sample.txt";
-    std::string target_sample = corpora_dir + to_code + ".sample.txt";
-    if (!shuffler.LoadFiles(source.c_str(), target.c_str(), max_lines)) {
+    std::string source_train = corpora_dir + from_code + ".train.txt";
+    std::string target_train = corpora_dir + to_code + ".train.txt";
+    std::string source_valid = corpora_dir + from_code + ".valid.txt";
+    std::string target_valid = corpora_dir + to_code + ".valid.txt";
+
+    size_t size = shuffler.LoadFiles(source.c_str(), target.c_str(), max_lines);
+    if (size==0) {
         return 1;
     }
-
-    shuffler.Shuffle();
-
-    if (!shuffler.SaveFiles(source_shuffled.c_str(), target_shuffled.c_str(), source_sample.c_str(), target_sample.c_str(), sample_lines)) {
+    shuffler.InitializeShuffleIndices(max_lines==0 ? size : max_lines);
+    // shuffler.Shuffle();
+    if (!shuffler.SaveFiles(source_train.c_str(), target_train.c_str(), source_valid.c_str(), target_valid.c_str(), sample_lines)) {
         return 1;
     }
-
     return 0;
 }

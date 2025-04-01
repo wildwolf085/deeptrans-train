@@ -12,3 +12,4 @@ corpora-test
 *.exe
 tokenizer/*
 log/*
+shuffle-*.bin
