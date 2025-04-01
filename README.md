@@ -1,10 +1,10 @@
 # DeepTrans
 
-Easy to use, cross-platform toolkit to train [deeptrans-train](https://github.com/wildwolf085/deamtrans-train) models, which can be used by [deeptrans](https://github.com/wildwolf085/deamtrans) 🚂
+Easy to use, cross-platform toolkit to train [deeptrans-train](https://github.com/wildwolf085/deamtrans-train) models, which can be used by [deeptrans](https://deamtrans.org) 🚂
 
 ## Requirements
 
- * Python >= 3.11
+ * Python == 3.11
  * NVIDIA CUDA graphics card (not required, but highly recommended)
 
 ## Install
@@ -14,14 +14,12 @@ git clone https://github.com/wildwolf085/deamtrans-train --depth 1
 cd deamtrans-train
 pip install -r requirements.txt
 
-# windows
-g++.exe -g ./validate-corpus.cpp -o ./validate-corpus.exe
-# linux
-g++.exe -g ./validate-corpus.cpp -o ./validate-corpus
+# compile tools
+mkdir bin
+g++ -g tool_validate.cpp -o bin/validate
+g++ -O3 -fopenmp tool_shuffle.cpp -o bin/shuffle
 
-g++ -O3 -fopenmp shuffle.cpp -o shuffle.exe
-
-./shuffle input1.txt input2.txt output1.txt output2.txt [num_lines]
+./tool_shuffle en de 0 5000
 ```
 
 ## Background

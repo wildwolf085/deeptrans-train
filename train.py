@@ -22,8 +22,8 @@ usage = """
 Usage: python train.py <from_code> <to_code> [additional arguments]
 
     additional arguments:
-    --vocab_size vocab_size. default 32,000
-    --corpus_size corpus_size. default 100,000,000
+    --vocab_size vocab_size. default 32000
+    --corpus_size corpus_size. default 144000000
     --reverse. reverse the source and target languages in the configuration and data sources. default False
     --restart. restart the training from scratch. default False
     --build. while training is in progress on a separate process, you can launch another instance of train.py with this flag turned on to build a model from the last available checkpoints rather that waiting until the end. default False
@@ -37,7 +37,7 @@ parser.add_argument('--vocab_size',
     help='Vocabulary size. Default: %(default)s')
 parser.add_argument('--corpus_size',
     type=int,
-    default=72000000 * 2,
+    default=144000000,
     help='Corpus size. Default: %(default)s')
 parser.add_argument('--reverse',
     action='store_true',
@@ -104,7 +104,6 @@ corpora_dir = os.path.join(current_dir, "test-corpora" if test else "corpora")
 
 avg_checkpoints = 1
 
-
 character_coverage = 1.0
 seq_length = 5000
 
@@ -118,15 +117,14 @@ train_steps = 1000 if test else 150000
 save_checkpoint_steps = 100 if test else valid_steps
 keep_checkpoint = 5
 
-_date_code = datetime.today().strftime('%y%m')
-_vocab_size = round(vocab_size / 1000)
-_corpus_size = round(corpus_size / 1000000)
 from_file = f"{corpora_dir}/{from_code}.txt"
 to_file = f"{corpora_dir}/{to_code}.txt"
 
+_date_code = datetime.today().strftime('%y%m')
+_vocab_size = round(vocab_size / 1000)
+_corpus_size = round(corpus_size / 1000000)
 _tokenizer = ".bpe" if use_bpe else ""
-
-version = f"{_vocab_size}k.{_corpus_size}m{_tokenizer}.{_date_code}"
+version = f"{_vocab_size}.{_corpus_size}{_tokenizer}.{_date_code}"
 
 valid_languages = [f[:-4] for f in filter(lambda x: x.endswith('.txt'), os.listdir(corpora_dir))]
 
@@ -358,7 +356,7 @@ subprocess.run(
     ]
 )
 
-# Create .deeptrans package
+# Create deeptrans package
 package_file = os.path.join(run_dir, f"{model_name}.zip")
 if os.path.isfile(package_file):
     os.unlink(package_file)
