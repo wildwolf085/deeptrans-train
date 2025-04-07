@@ -149,17 +149,17 @@ private:
             std::cerr << "Error: Cannot open file " << filename << std::endl;
             return false;
         }
-
-        // Use large buffer for reading
-        // const size_t BUFFER_SIZE = 1 << 20;  // 1MB buffer
-        // std::unique_ptr<char[]> buffer(new char[BUFFER_SIZE]);
-        // file.rdbuf()->pubsetbuf(buffer.get(), BUFFER_SIZE);
         
         std::string line;
         line.reserve(8192);  // Reserve typical line length
         
         size_t count = 0;
         while (std::getline(file, line)) {
+            // Skip empty lines or lines with only whitespace
+            if (line.empty() || std::all_of(line.begin(), line.end(), ::isspace)) {
+                continue;
+            }
+            
             lines.push_back(std::move(line));
             count++;
             if (max_lines==count) {

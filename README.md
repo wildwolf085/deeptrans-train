@@ -19,7 +19,8 @@ mkdir bin
 g++ -g tool_validate.cpp -o bin/validate
 # build release mode
 
-
+# install gcc
+# download https://github.com/niXman/mingw-builds-binaries/releases/download/14.2.0-rt_v12-rev2/x86_64-14.2.0-release-posix-seh-ucrt-rt_v12-rev2.7z
 g++ -O3 -fopenmp tool_shuffle.cpp -o shuffle
 
 ./bin/shuffle en de 0 100
