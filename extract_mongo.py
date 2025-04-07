@@ -21,7 +21,7 @@ collections = db.list_collection_names()
 
 # remove \r \n and \t, and trim spaces, multiple spaces to one space, null to empty string
 def sanitize(text):
-    return re.sub(r'[\r\n\t\0]', ' ', text).replace('', '').replace("  ", " ").strip()
+    return re.sub(r'[\r\n\t\0]', ' ', text).replace("  ", " ", 1000).strip()
 
 # Export parallel corpus to text files
 def process_batch(id_range, codes, corpora_dir, filename):
