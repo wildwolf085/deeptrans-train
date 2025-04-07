@@ -9,7 +9,6 @@ test
 requirements-local.txt
 corpora-test
 *-password.*
-*.exe
 tokenizer/*
 log/*
 shuffle-*.bin

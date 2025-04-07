@@ -17,9 +17,12 @@ pip install -r requirements.txt
 # compile tools
 mkdir bin
 g++ -g tool_validate.cpp -o bin/validate
-g++ -O3 -fopenmp tool_shuffle.cpp -o bin/shuffle
+# build release mode
 
-./bin/shuffle en de 0 5000
+
+g++ -O3 -fopenmp tool_shuffle.cpp -o shuffle
+
+./bin/shuffle en de 0 100
 ```
 
 ## Background
@@ -101,4 +104,14 @@ AGPLv3
 D:\appdata\env312\Scripts\activate.ps1
 
 python train.py ja
+
+zh-ru
+ru-zh
+
+zh-ko
+ko-zh
+
+zh-ar
+ar-zh
+
 

@@ -16,4 +16,5 @@ iso639==0.1.4
 sacremoses==0.0.53
 removedup==1.0.6
 fastshuffle==1.0.1
-# duckdb
+duckdb
+pymongo

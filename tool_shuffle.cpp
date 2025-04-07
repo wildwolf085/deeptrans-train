@@ -8,6 +8,7 @@
 #include <thread>
 #include <algorithm>
 #include <numeric>  // Add this include for std::iota
+#include <filesystem>
 
 #define MAX_LINES 80000000
 
@@ -25,6 +26,7 @@ public:
     }
 
     bool InitializeShuffleIndices(size_t corpus_size) {
+        // std::cout << "corpus_size: " << corpus_size << std::endl;
         // format text
         std::string shuffle_file_path = ".\\shuffle-" + std::to_string(corpus_size) + ".bin";  // Changed path to match original
         std::ifstream shuffle_file(shuffle_file_path, std::ios::binary);
@@ -60,16 +62,39 @@ public:
         return true;  // Don't apply permutation here
     }
 
-    size_t LoadFiles(const char* file1, const char* file2, size_t max_lines = 0) {
+    bool LoadFiles(const char* dir, const char* from_code, const char* to_code, size_t max_lines = 0) {
         auto start = std::chrono::high_resolution_clock::now();
         std::cout << "Loading files..." << std::endl;
 
-        if (!LoadSingleFile(file1, corpus1_, max_lines) || !LoadSingleFile(file2, corpus2_, max_lines)) {
-            return false;
+        std::string from_ext = std::string(".") + from_code;
+        std::string to_ext = std::string(".") + to_code;
+        
+        // List all files in directory
+        std::string dir_path = dir;
+        for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
+            std::string filename = entry.path().filename().string();
+            
+            // Check if file ends with from_code extension
+            if (filename.length() >= from_ext.length() && 
+                filename.compare(filename.length() - from_ext.length(), from_ext.length(), from_ext) == 0) {
+                
+                // Find corresponding to_code file by replacing extension
+                std::string base_name = filename.substr(0, filename.length() - from_ext.length());
+                std::string target_file = base_name + to_ext;
+                
+                if (std::filesystem::exists(dir_path + "/" + target_file)) {
+                    std::cout << "Processing pair: " << filename << " and " << target_file << std::endl;
+                    
+                    if (!LoadSingleFile((dir_path + "/" + filename).c_str(), corpus1_, max_lines) || 
+                        !LoadSingleFile((dir_path + "/" + target_file).c_str(), corpus2_, max_lines)) {
+                        return false;
+                    }
+                }
+            }
         }
 
-        if (corpus1_.size() != corpus2_.size()) {
-            std::cerr << "Error: Files have different number of lines" << std::endl;
+        if (corpus1_.empty() || corpus1_.size() != corpus2_.size()) {
+            std::cerr << "Error: No valid file pairs found or files have different number of lines" << std::endl;
             return false;
         }
 
@@ -77,7 +102,8 @@ public:
         auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
         std::cout << "Loading completed in " << duration.count() << " seconds\n";
         std::cout << "Total lines: " << corpus1_.size() << std::endl;
-        return corpus1_.size();
+        InitializeShuffleIndices(max_lines==0 ? corpus1_.size() : max_lines);
+        return true;
     }
 
     // void Shuffle() {
@@ -125,9 +151,9 @@ private:
         }
 
         // Use large buffer for reading
-        const size_t BUFFER_SIZE = 1 << 20;  // 1MB buffer
-        std::unique_ptr<char[]> buffer(new char[BUFFER_SIZE]);
-        file.rdbuf()->pubsetbuf(buffer.get(), BUFFER_SIZE);
+        // const size_t BUFFER_SIZE = 1 << 20;  // 1MB buffer
+        // std::unique_ptr<char[]> buffer(new char[BUFFER_SIZE]);
+        // file.rdbuf()->pubsetbuf(buffer.get(), BUFFER_SIZE);
         
         std::string line;
         line.reserve(8192);  // Reserve typical line length
@@ -154,9 +180,9 @@ private:
         }
 
         // Use large buffer for writing
-        const size_t BUFFER_SIZE = 1 << 20;  // 1MB buffer
-        std::unique_ptr<char[]> buffer(new char[BUFFER_SIZE]);
-        file.rdbuf()->pubsetbuf(buffer.get(), BUFFER_SIZE);
+        // const size_t BUFFER_SIZE = 1 << 20;  // 1MB buffer
+        // std::unique_ptr<char[]> buffer(new char[BUFFER_SIZE]);
+        // file.rdbuf()->pubsetbuf(buffer.get(), BUFFER_SIZE);
         
         size_t count = lines.size();
         
@@ -213,18 +239,17 @@ int main(int argc, char* argv[]) {
         if (argc > 4) sample_lines = std::stoull(argv[4]);
     }
     std::string corpora_dir = std::string(".\\corpora\\");
-    std::string source = corpora_dir + from_code + ".txt";
-    std::string target = corpora_dir + to_code + ".txt";
-    std::string source_train = corpora_dir + from_code + ".train.txt";
-    std::string target_train = corpora_dir + to_code + ".train.txt";
-    std::string source_valid = corpora_dir + from_code + ".valid.txt";
-    std::string target_valid = corpora_dir + to_code + ".valid.txt";
+    // std::string source = corpora_dir + from_code + ".txt";
+    // std::string target = corpora_dir + to_code + ".txt";
+    std::string source_train = corpora_dir + from_code + ".train.corpus";
+    std::string target_train = corpora_dir + to_code + ".train.corpus";
+    std::string source_valid = corpora_dir + from_code + ".valid.corpus";
+    std::string target_valid = corpora_dir + to_code + ".valid.corpus";
 
-    size_t size = shuffler.LoadFiles(source.c_str(), target.c_str(), max_lines);
-    if (size==0) {
+    if (!shuffler.LoadFiles(corpora_dir.c_str(), from_code, to_code, max_lines)) {
         return 1;
     }
-    shuffler.InitializeShuffleIndices(max_lines==0 ? size : max_lines);
+    
     // shuffler.Shuffle();
     if (!shuffler.SaveFiles(source_train.c_str(), target_train.c_str(), source_valid.c_str(), target_valid.c_str(), sample_lines)) {
         return 1;

@@ -33,11 +33,11 @@ parser = argparse.ArgumentParser(description='Train DeepTrans models')
 parser.add_argument("pair",nargs="*")
 parser.add_argument('--vocab_size',
     type=int,
-    default=32000,
+    default=50000,
     help='Vocabulary size. Default: %(default)s')
 parser.add_argument('--corpus_size',
     type=int,
-    default=144000000,
+    default=200000000,
     help='Corpus size. Default: %(default)s')
 parser.add_argument('--reverse',
     action='store_true',
@@ -117,24 +117,81 @@ train_steps = 1000 if test else 150000
 save_checkpoint_steps = 100 if test else valid_steps
 keep_checkpoint = 5
 
-from_file = f"{corpora_dir}/{from_code}.txt"
-to_file = f"{corpora_dir}/{to_code}.txt"
+# from_file = f"{corpora_dir}/{from_code}.txt"
+# to_file = f"{corpora_dir}/{to_code}.txt"
+
+transforms = ['sentencepiece', 'filtertoolong']
+
+data ={
+    'train': {
+        'path_src': f'{corpora_dir}/{from_code}.train.corpus',
+        'path_tgt': f'{corpora_dir}/{to_code}.train.corpus',
+        'transforms': transforms,
+        'weight': 1
+    },
+    'valid': {
+        'path_src': f'{corpora_dir}/{from_code}.valid.corpus',
+        'path_tgt': f'{corpora_dir}/{to_code}.valid.corpus', 
+        'transforms': transforms
+    }
+}
+
+
+
+
+if not os.path.isfile(data['train']['path_src']) or not os.path.isfile(data['train']['path_tgt']):
+    print(f"Shuffling {languages[from_code]['en']}, {languages[to_code]['en']} corpus")
+    # print("Shuffling data")
+    subprocess.run(
+        [
+            ".\\shuffle.exe",
+            from_code,
+            to_code,
+            "0",
+            "1000"
+        ]
+    )
+    
+    # src_train = os.path.join(run_dir, f"{from_code}.txt")
+    # tgt_train = os.path.join(run_dir, f"{to_code}.txt")
+
+    # print("Writing shuffled sets")
+    # os.makedirs(run_dir, exist_ok=True)
+
+    # src, tgt, src_sample, tgt_sample = file_shuffle_sample(from_file, to_file, 1000 if test else 5000)
+    # os.rename(src, src_train)
+    # os.rename(tgt, tgt_train)
+    # os.rename(src_sample, os.path.join(run_dir, f"{from_code}-val.txt"))
+    # os.rename(tgt_sample, os.path.join(run_dir, f"{to_code}-val.txt"))
+    
+    # print("Removing duplicates")
+    # src, tgt, removed = rdup(src_train, tgt_train)
+    # print(f"Removed {removed} lines")
+    # os.unlink(src_train)
+    # os.unlink(tgt_train)
+    # os.rename(src, src_train)
+    # os.rename(tgt, tgt_train)
 
 _date_code = datetime.today().strftime('%y%m')
+# size of source corpus as gigabytes
+_corpus_size = round(os.path.getsize(data['train']['path_src']) / (1024 ** 3))
+# target_corpus_size = os.path.getsize(data['train']['path_tgt']) / (1024 ** 3)
+
 _vocab_size = round(vocab_size / 1000)
 _corpus_size = round(corpus_size / 1000000)
 _tokenizer = ".bpe" if use_bpe else ""
-version = f"{_vocab_size}.{_corpus_size}{_tokenizer}.{_date_code}"
+
+version = f"{_date_code}.{_vocab_size}.{_corpus_size}{_tokenizer}"
 
 valid_languages = [f[:-4] for f in filter(lambda x: x.endswith('.txt'), os.listdir(corpora_dir))]
 
-if not os.path.exists(from_file):
-    print(f"Valid language codes: {valid_languages}")
-    exit(1)
+# if not os.path.exists(from_file):
+#     print(f"Valid language codes: {valid_languages}")
+#     exit(1)
 
-if not os.path.exists(to_file):
-    print(f"Valid language codes: {valid_languages}")
-    exit(1)
+# if not os.path.exists(to_file):
+#     print(f"Valid language codes: {valid_languages}")
+#     exit(1)
 
 model_name = f"{from_code}-{to_code}-{version}"
 run_dir = os.path.join(current_dir, "run", model_name)
@@ -144,32 +201,6 @@ if restart and os.path.isdir(run_dir): shutil.rmtree(run_dir)
 os.makedirs(run_dir, exist_ok=True)
 
 
-print(f"Training {languages[from_code]['en']} --> {languages[to_code]['en']} (tag: {version})")
-
-if not os.path.isfile(os.path.join(run_dir, f'{from_code}.txt')):
-    src_train = os.path.join(run_dir, f"{from_code}.txt")
-    tgt_train = os.path.join(run_dir, f"{to_code}.txt")
-
-    print("Writing shuffled sets")
-    os.makedirs(run_dir, exist_ok=True)
-
-    src, tgt, src_sample, tgt_sample = file_shuffle_sample(from_file, to_file, 1000 if test else 5000)
-    os.rename(src, src_train)
-    os.rename(tgt, tgt_train)
-    os.rename(src_sample, os.path.join(run_dir, f"{from_code}-val.txt"))
-    os.rename(tgt_sample, os.path.join(run_dir, f"{to_code}-val.txt"))
-    
-    print("Removing duplicates")
-    src, tgt, removed = rdup(src_train, tgt_train)
-    print(f"Removed {removed} lines")
-    os.unlink(src_train)
-    os.unlink(tgt_train)
-    os.rename(src, src_train)
-    os.rename(tgt, tgt_train)
-
-if shuffle_only:
-    print("done")
-    exit(0)
 
 os.makedirs(onmt_dir, exist_ok=True)
 sp_model_path = os.path.join(run_dir, f"{sp_name}.model")
@@ -177,7 +208,7 @@ if not os.path.isfile(sp_model_path):
     try:
         spm.SentencePieceTrainer.train(
             model_type="bpe" if use_bpe else "unigram",
-            input=[from_file, to_file], 
+            input=[data['train']['path_src'], data['train']['path_tgt']], 
             model_prefix=f"{run_dir}/{sp_name}", 
             vocab_size=vocab_size,
             character_coverage=character_coverage,
@@ -191,7 +222,8 @@ if not os.path.isfile(sp_model_path):
         print(str(e))
         exit(1)
 
-transforms = ['sentencepiece', 'filtertoolong']
+
+print(f"Training {languages[from_code]['en']} --> {languages[to_code]['en']} (tag: {version})")
 
 onmt_config = {
     'log_file': f'{run_dir}/opennmt.log',
@@ -201,19 +233,7 @@ onmt_config = {
     'src_vocab_size': vocab_size,
     'tgt_vocab_size': vocab_size,
     'share_vocab': True, 
-    'data': {
-        'train': {
-            'path_src': f'{run_dir}/{from_code}.txt',
-            'path_tgt': f'{run_dir}/{to_code}.txt',
-            'transforms': transforms,
-            'weight': 1
-        },
-        'valid': {
-            'path_src': f'{run_dir}/{from_code}-val.txt',
-            'path_tgt': f'{run_dir}/{to_code}-val.txt', 
-            'transforms': transforms
-        }
-    }, 
+    'data': data, 
     'src_subword_type': "bpe" if use_bpe else 'sentencepiece',
     'tgt_subword_type': "bpe" if use_bpe else 'sentencepiece',
     'src_onmttok_kwargs': {
