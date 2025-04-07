@@ -24,7 +24,7 @@ def sanitize(text):
     return re.sub(r'[\r\n\t\0]', ' ', text).replace('', '').replace("  ", " ").strip()
 
 # Export parallel corpus to text files
-def process_batch(id_range, codes, corpora_dir, prefix=""):
+def process_batch(id_range, codes, corpora_dir, filename):
     """
     Process multiple languages using aggregation pipeline
     
@@ -32,7 +32,7 @@ def process_batch(id_range, codes, corpora_dir, prefix=""):
         id_range: Tuple of (start_id, end_id)
         codes: List of language codes to process
         corpora_dir: Directory to save output files
-        prefix: Prefix for output file names (default: "")
+        filename: Filename for output file names (default: "")
     """
     start_id, end_id = id_range
     
@@ -79,10 +79,7 @@ def process_batch(id_range, codes, corpora_dir, prefix=""):
     
     # Create buffers for all languages
     buffers = {code: io.StringIO() for code in codes}
-    file_paths = {
-        code: f"{corpora_dir}/{prefix}-{code}.txt" if prefix else f"{corpora_dir}/{code}.txt"
-        for code in codes
-    }
+    file_paths = { code: f"{corpora_dir}/{filename}.{code}" for code in codes }
     
     processed_count = 0
     cursor = db[codes[0]].aggregate(pipeline, allowDiskUse=True)
@@ -125,10 +122,10 @@ def process_batch(id_range, codes, corpora_dir, prefix=""):
 # Main processing
 if __name__ == "__main__":
     if len(argv) < 3:
-        print("Usage: python extract_mongo.py <prefix> <code1> <code2> ...")
+        print("Usage: python extract_mongo.py <filename> <code1> <code2> ...")
         exit()
 
-    prefix = argv[1]
+    filename = argv[1]
     codes = argv[2:]
     
     # Get ID range from first collection
@@ -142,7 +139,7 @@ if __name__ == "__main__":
     # Clear all output files before starting
     print("Clearing output files...")
     for code in codes:
-        output_file = f"{corpora_dir}/{prefix}{code}.txt"
+        output_file = f"{corpora_dir}/{filename}.{code}"
         open(output_file, "w", encoding='utf8').close()
 
     start_time = time.time()
@@ -152,7 +149,7 @@ if __name__ == "__main__":
     GAP = 100000
     for start_id in range(min_id, max_id + GAP, GAP):
         end_id = min(start_id + GAP, max_id + 1)
-        processed_count = process_batch((start_id, end_id), codes, corpora_dir, prefix)
+        processed_count = process_batch((start_id, end_id), codes, corpora_dir, filename)
         total_processed += processed_count
         
     duration = time.time() - start_time
