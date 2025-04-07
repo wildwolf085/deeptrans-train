@@ -24,7 +24,7 @@ def sanitize(text):
 # Main processing
 if __name__ == "__main__":
     # Get count for this range
-    count = db['zh_2'].count_documents()
+    count = db['zh_2'].count_documents({})
     
     codes = ['en', 'zh']
     corpora_dir = "corpora"
